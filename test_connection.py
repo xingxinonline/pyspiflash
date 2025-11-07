@@ -57,6 +57,20 @@ def test_ftdi_devices():
         return False
     except Exception as e:
         print(f"❌ 错误: {e}")
+        # 针对 Windows 常见问题：PyUSB 找不到 libusb 后端
+        if 'No backend available' in str(e):
+            print("\n可能原因与解决：")
+            print("  • 未安装 libusb 运行库（缺少 libusb-1.0.dll）")
+            print("  • 设备未绑定到 WinUSB/libusbK 驱动（仍是厂商驱动，如 Digilent）")
+            print("\n请在 Windows 上按以下步骤处理：")
+            print("  1) 用 Zadig 将该设备切换为 WinUSB 驱动：")
+            print("     - 打开 Zadig → Options → 勾选 'List All Devices'")
+            print("     - 选择与 VID_0403&PID_6014 相符的设备（如 'Digilent USB Device'）")
+            print("     - 右侧选择 WinUSB → 点击 Install Driver / Replace Driver")
+            print("  2) 安装 libusb-1.0 运行库，并确保 libusb-1.0.dll 位于 PATH 或 python.exe 同目录")
+            print("  3) 可用以下命令自检后端是否可用：")
+            print("     python -c \"import usb.backend.libusb1 as b; print(b.get_backend())\"")
+            print("     若输出为 None，表示仍未找到后端")
         return False
 
 
