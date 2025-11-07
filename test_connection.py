@@ -10,6 +10,71 @@
 """
 
 import sys
+import os
+
+
+# ============================================================
+# 自动配置 libusb 后端（适配 Windows 环境）
+# ============================================================
+def configure_libusb_backend():
+    """
+    自动配置 PyUSB 的 libusb 后端路径
+    支持 libusb-package 和 libusb 两个包
+    """
+    try:
+        # 方法 1: 尝试使用 libusb_package
+        try:
+            import libusb_package
+            import usb.backend.libusb1
+            
+            # 获取 libusb-package 提供的 DLL 路径
+            dll_path = libusb_package.get_library_path()
+            if dll_path and os.path.exists(dll_path):
+                # 设置环境变量,让 PyUSB 能找到 DLL
+                dll_dir = os.path.dirname(dll_path)
+                if dll_dir not in os.environ.get('PATH', ''):
+                    os.environ['PATH'] = dll_dir + os.pathsep + os.environ.get('PATH', '')
+                
+                # 显式加载后端
+                backend = usb.backend.libusb1.get_backend(find_library=lambda x: dll_path)
+                if backend is not None:
+                    print(f"✓ 已配置 libusb 后端 (libusb-package): {dll_path}")
+                    return backend
+        except ImportError:
+            pass
+        
+        # 方法 2: 尝试使用 libusb 包
+        try:
+            import libusb
+            import usb.backend.libusb1
+            
+            # libusb 包会自动将 DLL 放到正确位置
+            backend = usb.backend.libusb1.get_backend()
+            if backend is not None:
+                print(f"✓ 已配置 libusb 后端 (libusb)")
+                return backend
+        except ImportError:
+            pass
+        
+        # 方法 3: 尝试系统默认后端
+        import usb.backend.libusb1
+        backend = usb.backend.libusb1.get_backend()
+        if backend is not None:
+            print(f"✓ 使用系统 libusb 后端")
+            return backend
+        
+        # 如果都失败了
+        print("⚠ 警告: 未能自动配置 libusb 后端")
+        print("建议执行: uv pip install libusb-package")
+        return None
+        
+    except Exception as e:
+        print(f"⚠ 配置 libusb 后端时出错: {e}")
+        return None
+
+
+# 在导入 pyftdi 之前先配置后端
+configure_libusb_backend()
 
 
 def test_ftdi_devices():
