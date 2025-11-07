@@ -350,8 +350,9 @@ def main():
         print(f"  自动擦除: {'是' if args.erase else '否'}")
         print(f"  验证: {'是' if args.verify else '否'}")
         
-        response = input("\n确认开始写入？(yes/no): ")
-        if response.lower() not in ['yes', 'y']:
+        response = input("\n确认开始写入？[Y/n] (直接回车=Yes): ").strip().lower()
+        # 空输入或 y/yes 都视为确认
+        if response and response not in ['y', 'yes']:
             print("已取消操作。")
             return 0
         
