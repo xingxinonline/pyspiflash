@@ -108,7 +108,19 @@
 └──────────────────────────────────────────────────────────────────┘
 
   Q: 检测不到设备？
-  A: 检查设备管理器，确保驱动是 WinUSB/libusbK
+  A: 检查设备管理器，确保驱动是 WinUSB/libusbK；使用下列命令自检：
+     PowerShell：
+       Get-PnpDevice -PresentOnly | Where-Object { $_.InstanceId -like 'USB\VID_0403*' } | Select Status,Class,FriendlyName,InstanceId
+       pnputil /enum-devices /connected | Select-String -Pattern "VID_0403|FTDI|6014"
+     如能看到 VID_0403 但仍无法连接，多半是驱动未切到 WinUSB，或缺少 libusb 运行库
+
+  Q: 运行报错 “No backend available”？
+  A: 这是 PyUSB 在 Windows 未找到 libusb 后端导致的：
+     • 用 Zadig 将设备切换为 WinUSB（Options → List All Devices → 选择设备 → 选 WinUSB → Install）
+     • 安装/放置 libusb-1.0.dll 到 PATH 或 python.exe 同目录（libusb 1.0 运行库）
+     • 自检命令：
+         python -c "import usb.backend.libusb1 as b; print(b.get_backend())"
+       若输出为 None，表示仍未找到后端
 
   Q: "Unable to read JEDEC Id" 错误？
   A: 检查硬件连接、电源电压、线材质量
