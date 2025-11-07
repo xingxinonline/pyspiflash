@@ -1,0 +1,145 @@
+╔══════════════════════════════════════════════════════════════════╗
+║                  PySpiFlash 快速入门卡片                         ║
+║                  ========================                         ║
+║                                                                  ║
+║  📖 完整文档: README_CN.md                                        ║
+╚══════════════════════════════════════════════════════════════════╝
+
+┌──────────────────────────────────────────────────────────────────┐
+│ 🛠️  第一步：环境搭建（首次使用必须完成）                          │
+└──────────────────────────────────────────────────────────────────┘
+
+  1. 安装 Python 3.11+
+     https://www.python.org/downloads/
+
+  2. 安装 UV 包管理器
+     pip install uv
+
+  3. 安装依赖
+     uv pip install pyftdi pyserial pyusb
+     uv pip install -e .
+
+  4. 安装 WinUSB 驱动（Windows）
+     • 下载 Zadig: https://zadig.akeo.ie/
+     • 以管理员运行
+     • Options → List All Devices
+     • 选择 FTDI 设备 → 选择 WinUSB → Replace Driver
+
+  5. 验证环境
+     uv run python test_connection.py
+
+┌──────────────────────────────────────────────────────────────────┐
+│ 🔌 第二步：硬件连接                                               │
+└──────────────────────────────────────────────────────────────────┘
+
+  FT232H 引脚    →    SPI Flash 引脚
+  ───────────────────────────────────
+  AD0 (SCK)      →    SCK/CLK
+  AD1 (MOSI)     →    MOSI/DI/SI
+  AD2 (MISO)     →    MISO/DO/SO
+  AD3 (CS)       →    CS#/SS#
+  GND            →    GND
+  3.3V           →    VCC (⚠️ 确认是 3.3V！)
+
+  ⚠️ 重要提示：
+  • 大多数 Flash 芯片使用 3.3V 供电
+  • 使用短线（< 15cm）
+  • CS# 建议加 10kΩ 上拉电阻
+
+┌──────────────────────────────────────────────────────────────────┐
+│ 🎯 第三步：快速测试                                               │
+└──────────────────────────────────────────────────────────────────┘
+
+  # 1. 检测设备
+  uv run python test_connection.py
+
+  # 2. 查看设备信息
+  uv run python flash_write_file.py --info
+
+  # 3. 运行快速演示（自动测试读写）
+  uv run python examples\flash_commands.py
+
+  # 4. 手动测试 - 创建测试文件
+  uv run python -c "from examples.flash_commands import create_test_file; create_test_file('test.bin', 64*1024)"
+
+  # 5. 写入测试
+  uv run python flash_write_file.py test.bin -a 0x10000
+
+  # 6. 读取验证
+  uv run python flash_read_file.py readback.bin 64K -a 0x10000
+
+┌──────────────────────────────────────────────────────────────────┐
+│ 📖 常用命令速查                                                   │
+└──────────────────────────────────────────────────────────────────┘
+
+  命令行工具
+  ──────────
+  # 写入文件
+  flash_write_file.py <文件> [-a 地址]
+
+  # 读取文件
+  flash_read_file.py <输出> <大小> [-a 地址]
+
+  # 大小支持: 4096, 4K, 64K, 1M, 0x10000
+
+  Python 代码
+  ───────────
+  from spiflash.serialflash import SerialFlashManager
+
+  flash = SerialFlashManager.get_flash_device('ftdi://ftdi:232h/1')
+  data = flash.read(0x0, 256)        # 读取
+  
+  flash.unlock()                      # 解锁
+  flash.erase(0x1000, 4096)          # 擦除 4KB
+  flash.write(0x1000, b"data")       # 写入
+
+  交互式使用
+  ──────────
+  uv run python
+  >>> from examples.flash_commands import *
+  >>> flash = connect()
+  >>> info(flash)
+  >>> read_hex(flash, 0x0, 256)
+  >>> erase_4k(flash, 0x1000)
+  >>> write_text(flash, 0x1000, "Hello")
+
+┌──────────────────────────────────────────────────────────────────┐
+│ 🆘 常见问题                                                       │
+└──────────────────────────────────────────────────────────────────┘
+
+  Q: 检测不到设备？
+  A: 检查设备管理器，确保驱动是 WinUSB/libusbK
+
+  Q: "Unable to read JEDEC Id" 错误？
+  A: 检查硬件连接、电源电压、线材质量
+
+  Q: 写入验证失败？
+  A: 确保使用自动擦除（默认开启），不要用 --no-erase
+
+  Q: 如何备份整片 Flash？
+  A: flash_read_file.py backup.bin 16M
+
+┌──────────────────────────────────────────────────────────────────┐
+│ 📚 文档和资源                                                     │
+└──────────────────────────────────────────────────────────────────┘
+
+  本地文档
+  ────────
+  README_CN.md         完整中文指南（推荐阅读）
+  README.rst           官方英文文档
+  examples/            示例代码目录
+
+  在线资源
+  ────────
+  PyFTDI:  https://eblot.github.io/pyftdi/
+  GitHub:  https://github.com/eblot/pyspiflash
+
+  获取帮助
+  ────────
+  flash_write_file.py --help
+  flash_read_file.py --help
+  uv run python examples\flash_commands.py    # 快速演示
+
+╔══════════════════════════════════════════════════════════════════╗
+║  🎉 准备好了吗？运行: uv run python test_connection.py           ║
+╚══════════════════════════════════════════════════════════════════╝
